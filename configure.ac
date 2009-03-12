@@ -27,7 +27,6 @@ AC_SUBST(GI_LIBS)
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
-	samples/Makefile
-	libgreflect.pc
+	libgreflect-1.0.pc
 ])
 AC_OUTPUT

@@ -7,7 +7,7 @@ AM_CFLAGS = \
 
 VALACFLAGS = \
 	--pkg vala-1.0 \
-	--pkg gobject-instrospection-1.0 \
+	--pkg gobject-introspection-1.0 \
 	--library greflect-1.0
 
 BUILT_SOURCES = \
