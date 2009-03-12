@@ -1,0 +1,33 @@
+AC_INIT([libgreflect], [0.1.0], [http://www.shr-project.org/], [libgreflect])
+AC_CONFIG_SRCDIR([src/Makefile.am])
+AC_CONFIG_HEADERS(config.h)
+AM_INIT_AUTOMAKE([dist-bzip2])
+AM_MAINTAINER_MODE
+
+AC_PROG_CC
+AM_PROG_CC_C_O
+AC_DISABLE_STATIC
+AC_PROG_LIBTOOL
+
+AC_PATH_PROG(VALAC, valac, valac)
+AC_SUBST(VALAC)
+
+AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
+AC_SUBST(LDFLAGS)
+
+PKG_CHECK_MODULES(VALA, vala-1.0)
+AC_SUBST(VALA_CFLAGS)
+AC_SUBST(VALA_LIBS)
+
+PKG_CHECK_MODULES(GI, gobject-introspection-1.0)
+AC_SUBST(GI_CFLAGS)
+AC_SUBST(GI_LIBS)
+
+AC_CONFIG_FILES([
+	Makefile
+	src/Makefile
+	samples/Makefile
+	libgreflect.pc
+])
+AC_OUTPUT

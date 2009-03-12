@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libgreflect
+Description: GReflect provides reflective information about GLib classes and objects.
+Version: @VERSION@
+Requires: glib-2.0 gobject-2.0 vala-1.0 gthread-2.0 gobject-introspection-1.0
+Libs: -L${libdir} -lgreflect
+Cflags: -I${includedir}/greflect
+
+
