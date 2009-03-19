@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = 
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libgreflect-1.0.pc
+pkgconfig_DATA = greflect-1.0.pc
 
 dist-hook: gen-ChangeLog
 
@@ -20,7 +20,7 @@ SUBDIRS = \
 
 EXTRA_DIST = \
 	gitlog-to-changelog \
-	libgreflect-1.0.pc.in
+	greflect-1.0.pc.in
 
 DISTCLEANFILES = \
 	intltool-extract \

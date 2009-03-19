@@ -12,6 +12,9 @@ AC_PROG_LIBTOOL
 AC_PATH_PROG(VALAC, valac, valac)
 AC_SUBST(VALAC)
 
+AC_PATH_PROG(GIR_COMPILER, g-ir-compiler, g-ir-compiler)
+AC_SUBST(GIR_COMPILER)
+
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
@@ -27,6 +30,6 @@ AC_SUBST(GI_LIBS)
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
-	libgreflect-1.0.pc
+	greflect-1.0.pc
 ])
 AC_OUTPUT
