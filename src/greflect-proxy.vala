@@ -1,4 +1,5 @@
 using GLib;
+using Introspection;
 using FFi;
 
 namespace Reflect {
@@ -54,19 +55,47 @@ namespace Reflect {
 
 			Callback* callbacks = (Callback*) (iface + G_TYPE_INTERFACE_SIZE);
 
-			MethodSet method_set = MethodSet.from_type(type);
-			foreach (Method method in method_set.get_methods()) {
-				//if (method.is_virtual) {
-					int offset = method.vfunc_offset;
-					*(callbacks + offset * sizeof(Callback)) = (void*) method.get_closure();
-				//}
+			Interface i = (Interface) Reflect.get_classifier(type);
+			foreach (Method method in i.get_methods()) {
+				CallbackInfo callback_info = method.callback_info;
+
+				ProxyCallbackClosure method_closure = new ProxyCallbackClosure(method);
+
+				FFi.CIF cif = FFi.CIF();
+				FFi.Closure closure = callback_info.prepare_closure(cif, method_closure.closure_callback);
+
+				int offset = method.vfunc_offset;
+				*(callbacks + offset) = (void*) closure;
+			}
+		}
+
+		protected static void interface_finalize(void* iface, void* interface_data) {
+			Type type = (Type) interface_data;
+			message(type.name());
+
+			Callback* callbacks = (Callback*) (iface + G_TYPE_INTERFACE_SIZE);
+
+			Interface i = (Interface) Reflect.get_classifier(type);
+			foreach (Method method in i.get_methods()) {
+				CallbackInfo callback_info = method.callback_info;
+
+				int offset = method.vfunc_offset;
+				FFi.Closure closure = (FFi.Closure) (*(callbacks + offset));
+
+				callback_info.free_closure(closure);
+			}
+		}
+
+		private class ProxyCallbackClosure {
+			private ProxyCallbackClosure(Method method) {
+				this.method = method;
 			}
 
-			// Register virtual methods callbacks
-			// Use g-i to determine virtual methods
-			// And their offset in the iface struct
-			
-			// iface->test_method = reflect_proxy_impl_real_test_method;
+			private Method method;
+
+			public void closure_callback(CIF? cif, void* result, void** args) {
+				message("In inner callback");
+			}
 		}
 
 		private static int proxy_id = 0;

@@ -4,19 +4,58 @@ using FFi;
 
 namespace Reflect {
 
-	internal class MethodSet : Object {
+	private Repository get_introspection_repository() {
+			Repository.prepend_search_path(Environment.get_current_dir());
 
-		public MethodSet(Method[] methods) {
-			this.methods = methods;
+			Repository repository = Repository.get_default();
+			repository.require("Test");
+			
+			return repository;
+	}
+	
+	private HashTable<Type, Classifier> per_type_classifier;
+	
+	public Classifier get_classifier(Type type) {
+		if (per_type_classifier == null) {
+			per_type_classifier = new HashTable<Type, Classifier>(int_hash, int_equal);
+		}
+
+		Classifier? classifier = per_type_classifier.lookup(type);
+		if (classifier == null) {
+			if (type.is_object()) {
+				classifier = new Class(type);
+			} else if (type.is_interface()) {
+				classifier = new Interface(type);
+			}
+			per_type_classifier.insert(type, classifier);
+		}
+		
+		return classifier;
+	}
+
+	public abstract class Classifier : Object {
+		private Classifier(Type type) {
+			this.gtype = type;
+		}
+
+		public Type gtype { get; construct; }
+
+		public string name {
+			get {
+				return gtype.name();
+			}
 		}
 
 		private Method[] methods;
 
-		public unowned Method[] get_methods() {
+		public Method[] get_methods() {
+			if (methods == null) {
+				introspect_methods();
+			}
 			return methods;
 		}
 
-		public Method? from_name(string name) {
+		public Method? get_method(string name) {
 			foreach (Method method in methods) {
 				if (method.name == name) {
 					return method;
@@ -25,32 +64,13 @@ namespace Reflect {
 			return null;
 		}
 
-		private static HashTable<Type, MethodSet> per_type_methods = null;
+		private void introspect_methods() {
+			Repository repository = get_introspection_repository();
 
-		public static unowned MethodSet from_type(Type type) {
-			if (per_type_methods == null) {
-				per_type_methods = new HashTable<Type, MethodSet>(int_hash, int_equal);
-			}
-
-			unowned MethodSet? methods = per_type_methods.lookup(type);
-			if (methods == null) {
-				per_type_methods.insert(type, introspect_methods(type));
-			}
-			methods = per_type_methods.lookup(type);
-
-			return methods;
-		}
-
-		private static MethodSet introspect_methods(Type type) {
-			Repository.prepend_search_path(Environment.get_current_dir());
-
-			Repository repository = Repository.get_default();
-			repository.require("Test");
-
-			BaseInfo? base_info = repository.find_by_type(type);
+			BaseInfo? base_info = repository.find_by_type(gtype);
 			assert(base_info != null);
 
-			MethodSet methods = new MethodSet(new Method[0]);
+			methods = new Method[0];
 
 			InfoType info_type = base_info.get_type();
 			if(info_type == InfoType.INTERFACE) {
@@ -58,13 +78,27 @@ namespace Reflect {
 
 				for (int i = 0; i < iface_info.get_n_vfuncs(); i++) {
 					VFuncInfo? func_info = iface_info.get_vfunc(i);
-					methods.methods += new Method(type,
-						func_info.get_invoker(),
-						func_info);
+					Method method = new Method(gtype, func_info.get_invoker(), func_info);
+
+					methods += method;
 				}
 			}
+		}
+	}
 
-			return methods;
+	public class Interface : Classifier {
+		private Interface(Type type) {
+			base(type);
+		}
+	}
+
+	public class Class : Classifier {
+		private Class(Type type) {
+			base(type);
+		}
+		
+		public Object? new_instance() {
+			return null;
 		}
 	}
 
@@ -74,20 +108,20 @@ namespace Reflect {
 			this.declaring_type = type;
 			this.function_info = function_info;
 			this.vfunc_info = vfunc_info;
+			if (vfunc_info != null) {
+				_callback_info = vfunc_info.get_callback();
+			}
 			
 			message("method name: %s", function_info.get_name());
 			message("invoker flags: %d", function_info.get_flags());
 			message("vfunc flags: %d", vfunc_info.get_flags());
 		}
 
-		public static Method from_name(Type type, string name) {
-			return MethodSet.from_type(type).from_name(name);
-		}
-
 		public Type declaring_type { get; private set; }
 
 		private FunctionInfo? function_info;
-		private  VFuncInfo? vfunc_info;
+		private VFuncInfo? vfunc_info;
+		private CallbackInfo? _callback_info;
 
 		public string name {
 			get {
@@ -107,6 +141,12 @@ namespace Reflect {
 			}
 		}
 
+		internal CallbackInfo? callback_info {
+			get {
+				return _callback_info;
+			}
+		}
+
 		public bool is_property_accessor { get; private set; }
 
 		public Parameter return_value { get; private set; }
@@ -121,19 +161,6 @@ namespace Reflect {
 		public Value? invoke(Object object, params Value[] arguments)
 				throws Error {
 			return null;
-		}
-
-		private FFi.Closure? _closure;
-		internal unowned FFi.Closure? get_closure() {
-			if (_closure == null) {
-				FFi.CIF cif = FFi.CIF();
-				_closure = vfunc_info.get_callback().prepare_closure(cif, closure_callback);
-			}
-			return _closure;
-		}
-
-		private void closure_callback(CIF? cif, void* result, void** args) {
-			message("In inner callback");
 		}
 	}
 
